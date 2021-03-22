@@ -31,7 +31,7 @@ services:
     depends_on:
       - php-fpm
       - nginx
-      - workspace
+      - btb-workspace
       - storage
 
   # PHP FPM
@@ -45,7 +45,7 @@ services:
     expose:
       - "9000"
     depends_on:
-      - workspace
+      - btb-workspace
     environment:
       XDEBUG_HOST: ${XDEBUG_HOST}
       XDEBUG_PORT: ${XDEBUG_PORT:-9000}
@@ -76,7 +76,7 @@ services:
 
   # Workspace
 
-  workspace:
+  btb-workspace:
     image: vinhnguyen1512/laravel-workspace
     restart: on-failure
     container_name: btb-workspace

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Possible workspaces
-declare -a WORKSPACES=(client host admin)
+declare -a WORKSPACES=(btb)
 
 # Validate user-supplied workspace.
 validate_workspace () {
@@ -12,13 +12,13 @@ validate_workspace () {
 }
 
 if [[ $(validate_workspace "$1" "${WORKSPACES[@]}") == 1 ]]; then
-    echo "Invalid workspace provided. Available ones are: 'client', 'host', and 'admin'"
+    echo "Invalid workspace provided. Available ones are: 'btb'"
     exit 1
 fi
 
 # Build docker workspace container name.
-# The pattern is luxstay-$1-workspace.
-workspace="luxstay-$1-workspace"
+# The pattern is $1-workspace.
+workspace="$1-workspace"
 
 # Execute commom commands inside workspace container.
 if [ $# -gt 1 ]; then
