@@ -1,0 +1,226 @@
+version: '3'
+
+services:
+  # System stack
+
+  system:
+    image: tianon/sleeping-beauty
+    container_name: system-stack
+    depends_on:
+      - portainer
+
+  # Storage stack
+
+  storage:
+    image: tianon/sleeping-beauty
+    container_name: storage-stack
+    depends_on:
+      - mysql
+      - redis
+      - beanstalkd
+      - phpmyadmin
+      - memcached
+      - mongo
+      - rabbitmq
+
+  # BTB application stack
+
+  btb-app:
+    image: tianon/sleeping-beauty
+    container_name: btb-app-stack
+    depends_on:
+      - php-fpm
+      - nginx
+      - workspace
+      - storage
+
+  # PHP FPM
+
+  php-fpm:
+    image: vinhnguyen1512/laravel-php-fpm
+    restart: on-failure
+    container_name: btb-php-fpm
+    volumes:
+      - ${BTB_PROJECT_ROOT}:/var/www/app
+    expose:
+      - "9000"
+    depends_on:
+      - workspace
+    environment:
+      XDEBUG_HOST: ${XDEBUG_HOST}
+      XDEBUG_PORT: ${XDEBUG_PORT:-9000}
+      XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-docker}
+    networks:
+      - btb
+
+  # NGINX
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: btb/nginx
+    restart: on-failure
+    container_name: btb-nginx
+    volumes:
+      - ./nginx/btb:/etc/nginx/conf.d
+      - ./nginx/common:/etc/nginx/common
+      - db-data:/var/lib/mysql
+      - ${BTB_PROJECT_ROOT}:/var/www/app
+    ports:
+      - "${BTB_NGINX_PORT}:80"
+    depends_on:
+      - php-fpm
+    networks:
+      - btb
+
+  # Workspace
+
+  workspace:
+    image: vinhnguyen1512/laravel-workspace
+    restart: on-failure
+    container_name: btb-workspace
+    volumes:
+      - ${BTB_PROJECT_ROOT}:/var/www/app
+    networks:
+      - btb
+    tty: true
+
+  # MySQL
+
+  mysql:
+    image: mysql:5.7
+    hostname: mysql
+    restart: on-failure
+    container_name: btb-mysql
+    volumes:
+      - db-data:/var/lib/mysql
+    expose:
+      - "3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    networks:
+      - btb
+      - storage
+
+  # phpMyAdmin
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    hostname: phpmyadmin
+    restart: on-failure
+    container_name: btb-phpmyadmin
+    volumes:
+      - /sessions
+    ports:
+      - "${PHPMYADMIN_PORT}:80"
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    networks:
+      - storage
+
+  # Redis
+
+  redis:
+    image: redis:alpine
+    hostname: redis
+    restart: on-failure
+    container_name: btb-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - btb
+
+  # Beanstalk
+
+  beanstalkd:
+      image: kusmierz/beanstalkd
+      hostname: beanstalkd
+      restart: on-failure
+      container_name: btb-beanstalk
+      networks:
+        - btb
+
+  # MongoDB
+
+  mongo:
+    image: bitnami/mongodb:latest
+    hostname: mongo
+    restart: on-failure
+    container_name: btb-mongodb
+    volumes:
+      - mongo-data:/bitnami/mongodb
+    environment:
+      MONGODB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGODB_USERNAME: ${MONGODB_USERNAME}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+    networks:
+      - btb
+
+  # Memcached
+
+  memcached:
+    image: 'bitnami/memcached:latest'
+    hostname: memcached
+    restart: on-failure
+    container_name: btb-memcached
+    networks:
+      - btb
+
+  # RabbitMQ
+
+  rabbitmq:
+    image: bitnami/rabbitmq:latest
+    hostname: rabbitmq
+    restart: on-failure
+    container_name: btb-rabbitmq
+    volumes:
+      - rabbitmq-data:/bitnami
+    environment:
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    networks:
+      - btb
+
+  # Portainer for managing docker containers
+
+  portainer:
+    image: portainer/portainer
+    hostname: portainer
+    restart: on-failure
+    container_name: btb-portainer
+    volumes:
+      - ${PATH_DOCKER_SOCKET}:/var/run/docker.sock
+      - ${PATH_DATA:-./data}/portainer:/data
+    ports:
+      - "9000"
+
+
+# Networking
+
+networks:
+  btb:
+    driver: bridge
+  storage:
+    driver: bridge
+
+
+
+# Volumes
+
+volumes:
+  db-data:
+    driver: local
+  redis-data:
+    driver: local
+  mongo-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
