@@ -140,12 +140,12 @@ services:
   # Beanstalk
 
   beanstalkd:
-      image: kusmierz/beanstalkd
-      hostname: beanstalkd
-      restart: on-failure
-      container_name: btb-beanstalk
-      networks:
-        - btb
+    image: kusmierz/beanstalkd
+    hostname: beanstalkd
+    restart: on-failure
+    container_name: btb-beanstalk
+    networks:
+      - btb
 
   # MongoDB
 
