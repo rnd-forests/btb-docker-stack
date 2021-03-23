@@ -202,6 +202,20 @@ services:
     ports:
       - "9000"
 
+  # Java
+
+  java:
+    image: bitnami/java:latest
+    hostname: java
+    restart: on-failure
+    container_name: btb-java
+    volumes:
+      - java-data:/app
+      - ${BTB_PROJECT_ROOT}:/var/www/app
+    networks:
+      - btb
+    tty: true
+
 
 # Networking
 
@@ -223,4 +237,6 @@ volumes:
   mongo-data:
     driver: local
   rabbitmq-data:
+    driver: local
+  java-data:
     driver: local
